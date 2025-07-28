@@ -1,12 +1,6 @@
-// Global variables for reuse
-let provider;
-let signer;
-let contract;
-
-// 🔐 Your deployed contract address on Sepolia
 const contractAddress = "0xD3906A5d6B2a4912F116F5e342a8428804829871";
 
-// 🔧 Only this ABI is needed for claim() function
+// Replace with your full ABI from Remix or Etherscan if different
 const abi = [
   {
     "inputs": [],
@@ -17,10 +11,11 @@ const abi = [
   }
 ];
 
-// 🟢 Connect MetaMask wallet
+let provider, signer, contract;
+
 async function connectWallet() {
-  if (typeof window.ethereum === 'undefined') {
-    alert("MetaMask not detected. Please install it!");
+  if (!window.ethereum) {
+    alert("MetaMask not found. Please install MetaMask.");
     return;
   }
 
@@ -29,36 +24,28 @@ async function connectWallet() {
     await provider.send("eth_requestAccounts", []);
     signer = provider.getSigner();
     const address = await signer.getAddress();
+    document.getElementById("status").innerText = "✅ Connected: " + address;
+    
     contract = new ethers.Contract(contractAddress, abi, signer);
-
-    document.getElementById("status").innerText = `Connected: ${address}`;
-    console.log("Connected wallet address:", address);
   } catch (err) {
-    console.error("Error connecting wallet:", err);
-    alert("Wallet connection failed. Check console for details.");
+    console.error("Wallet connection error:", err);
+    alert("❌ Failed to connect wallet. Check console.");
   }
 }
 
-// 🪂 Execute claim() function
 async function claimAirdrop() {
   if (!contract) {
-    alert("Please connect your wallet first.");
+    alert("Wallet not connected.");
     return;
   }
 
   try {
-    const tx = await contract.claim({
-      gasLimit: 100000,
-      maxFeePerGas: ethers.utils.parseUnits("100", "gwei"),
-      maxPriorityFeePerGas: ethers.utils.parseUnits("2", "gwei")
-    });
-    console.log("Transaction sent:", tx.hash);
-    document.getElementById("status").innerText = "Claim submitted, waiting for confirmation...";
-
+    const tx = await contract.claim({ gasLimit: 200000 });
+    document.getElementById("status").innerText = "⏳ Claiming...";
     await tx.wait();
     document.getElementById("status").innerText = "✅ Claim successful!";
   } catch (err) {
-    console.error("Claim failed:", err);
-    document.getElementById("status").innerText = "❌ Claim failed or already claimed.";
+    console.error("Claim error:", err);
+    document.getElementById("status").innerText = "❌ Claim failed. Check console.";
   }
 }
